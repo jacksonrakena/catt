@@ -7,6 +7,12 @@
 # General application configuration
 import Config
 
+config :catt, CattWeb.Repo,
+  database: "catt_repo",
+  username: "user",
+  password: "pass",
+  hostname: "localhost"
+
 config :catt,
   ecto_repos: [Catt.Repo],
   generators: [timestamp_type: :utc_datetime]
