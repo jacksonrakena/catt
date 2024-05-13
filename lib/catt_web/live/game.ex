@@ -4,7 +4,7 @@ defmodule CattWeb.GameLive do
 
   def render(assigns) do
     ~H"""
-    <%= @temperature.text %> <button phx-click="inc_temperature"></button>
+    <%= @prompt_card.text %> <button phx-click="inc_temperature"></button>
     <br />
     <br />
     <ul>
@@ -17,22 +17,23 @@ defmodule CattWeb.GameLive do
 
   def mount(_params, _session, socket) do
     prompt_card =
-      Catt.Schema
+      Catt.Card
       |> Ecto.Query.where(type: :prompt_normal)
       |> Ecto.Query.order_by(fragment("RANDOM()"))
       |> Ecto.Query.limit(1)
       |> Catt.Repo.one()
 
     response_cards =
-      Catt.Schema
+      Catt.Card
       |> Ecto.Query.where(type: :response)
       |> Ecto.Query.order_by(fragment("RANDOM()"))
       |> Ecto.Query.limit(5)
       |> Catt.Repo.all()
 
-    {:ok, assign(socket, %{temperature: prompt_card, response_cards: response_cards})}
+    {:ok, assign(socket, %{prompt_card: prompt_card, response_cards: response_cards})}
   end
 
+  @spec handle_event(<<_::120>>, any(), map()) :: {:noreply, map()}
   def handle_event("inc_temperature", _params, socket) do
     {:noreply, update(socket, :temperature, &(&1 + 1))}
   end
