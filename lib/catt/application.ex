@@ -14,6 +14,7 @@ defmodule Catt.Application do
       {Phoenix.PubSub, name: Catt.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Catt.Finch},
+      Catt.GameSupervisor,
       # Start a worker by calling: Catt.Worker.start_link(arg)
       # {Catt.Worker, arg},
       # Start to serve requests, typically the last entry
