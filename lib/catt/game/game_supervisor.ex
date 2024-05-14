@@ -22,6 +22,7 @@ defmodule Catt.GameSupervisor do
            }}
   def init(nil) do
     {:ok, _} = Registry.start_link(keys: :unique, name: Registry.Catt)
+    {:ok, _} = Registry.start_link(keys: :unique, name: Registry.Players)
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
@@ -32,15 +33,8 @@ defmodule Catt.GameSupervisor do
     |> Enum.map(fn pid -> GenServer.call(pid, :get_code) end)
   end
 
-  def try_find_existing_lobby(player_id) do
-    DynamicSupervisor.which_children(Catt.GameSupervisor)
-    |> Enum.map(fn {:undefined, pid, type, module} -> GenServer.call(pid, :get_code) end)
-    |> Enum.filter(fn state -> Enum.member?(state.players, player_id) end)
-    |> List.first()
-  end
-
-  def get_game_by_code(code) do
-    pid = GenServer.whereis({:via, Registry, {Registry.Catt, code}})
+  def get_game_by_player(player_id) do
+    pid = GenServer.whereis({:via, Registry, {Registry.Players, player_id}})
 
     if pid != nil do
       GenServer.call(pid, :get_code)
@@ -49,21 +43,30 @@ defmodule Catt.GameSupervisor do
     end
   end
 
-  @spec get_pid_by_code(any()) :: nil | pid() | {atom(), atom()}
+  def get_game_by_code(code) do
+    pid = get_pid_by_code(code)
+
+    if pid != nil do
+      GenServer.call(pid, :get_code)
+    else
+      nil
+    end
+  end
+
+  @spec get_pid_by_code(any()) :: nil | pid()
   def get_pid_by_code(code) do
     GenServer.whereis({:via, Registry, {Registry.Catt, code}})
   end
 
   def join_game(code, player_id) do
-    game = GameSupervisor.get_game_by_code(code)
-    pid = get_pid_by_code(code)
-    GenServer.call(pid, {:join_game, player_id})
+    GameSupervisor.get_pid_by_code(code)
+    |> GenServer.call({:join_game, player_id})
 
     PubSub.broadcast(Catt.PubSub, code, :update)
   end
 
   def leave_game(code, player_id) do
-    pid = get_pid_by_code(code)
+    pid = GameSupervisor.get_pid_by_code(code)
     GenServer.call(pid, {:leave_game, player_id})
 
     if !Enum.any?(GameSupervisor.get_game_by_code(code).players) do
@@ -89,22 +92,12 @@ defmodule Catt.GameSupervisor do
       restart: :transient
     }
 
-    DynamicSupervisor.start_child(__MODULE__, child_spec)
+    {:ok, pid} = DynamicSupervisor.start_child(__MODULE__, child_spec)
+
+    pid |> GenServer.call({:join_game, owner_id})
 
     PubSub.broadcast(Catt.PubSub, "global", :update_game_list)
 
     {:ok, code}
-  end
-
-  @spec stop_game(String.t()) :: :ok
-  def stop_game(game_id) do
-    :ok
-  end
-
-  @spec which_children() :: [
-          {any(), :restarting | :undefined | pid(), :supervisor | :worker, :dynamic | [atom()]}
-        ]
-  def which_children do
-    Supervisor.which_children(__MODULE__)
   end
 end

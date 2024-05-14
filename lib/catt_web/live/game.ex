@@ -54,7 +54,7 @@ defmodule CattWeb.GameLive do
   def mount(_params, session, socket) do
     Phoenix.PubSub.subscribe(Catt.PubSub, "global")
 
-    case GameSupervisor.try_find_existing_lobby(socket.assigns.current_user.id) do
+    case GameSupervisor.get_game_by_player(socket.assigns.current_user.id) do
       lobby when not is_nil(lobby) ->
         Phoenix.PubSub.subscribe(Catt.PubSub, lobby.code)
 
@@ -141,6 +141,7 @@ defmodule CattWeb.GameLive do
     }
   end
 
+  @spec handle_join(binary()) :: :ok | {:error, {:already_registered, pid()}}
   def handle_join(code) do
     Phoenix.PubSub.subscribe(Catt.PubSub, code)
   end

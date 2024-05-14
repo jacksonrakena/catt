@@ -1,6 +1,5 @@
 defmodule GameServer do
   alias Phoenix.PubSub
-  alias Ecto.UUID
   use GenServer
   require Logger
 
@@ -15,7 +14,7 @@ defmodule GameServer do
      %{
        code: state.code,
        owner_id: state.owner_id,
-       players: [state.owner_id],
+       players: [],
        state: :lobby,
        current_player: 0
      }}
@@ -36,18 +35,13 @@ defmodule GameServer do
     {:reply, state, state}
   end
 
-  defp notify_update(state) do
-    PubSub.broadcast(Catt.PubSub, state.code, :update)
-  end
-
   def handle_call({:join_game, player_id}, _from, state) do
-    notify_update(state)
-    Logger.info("#{player_id} joining")
+    {:ok, _} = Registry.register(Registry.Players, player_id, {})
     {:reply, :ok, Map.put(state, :players, [player_id | state.players])}
   end
 
   def handle_call({:leave_game, player_id}, _from, state) do
-    notify_update(state)
+    Registry.unregister(Registry.Players, player_id)
 
     {:reply, :ok,
      Map.put(state, :players, Enum.filter(state.players, fn e -> e != player_id end))}
