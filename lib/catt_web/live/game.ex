@@ -10,10 +10,6 @@ defmodule CattWeb.GameLive do
 
   def render(assigns) do
     ~H"""
-    Username: <%= @user_id %>
-    <br /><br />
-    <br />
-    <br />
     <%= if @code == nil do %>
       <button phx-click="start_game">Start new game</button>
       <h3>All games</h3>
@@ -56,6 +52,8 @@ defmodule CattWeb.GameLive do
 
   @spec mount(any(), any(), atom() | %{:id => any(), optional(any()) => any()}) :: {:ok, any()}
   def mount(_params, session, socket) do
+    Phoenix.PubSub.subscribe(Catt.PubSub, "global")
+
     case GameSupervisor.try_find_existing_lobby(socket.assigns.current_user.id) do
       lobby when not is_nil(lobby) ->
         Phoenix.PubSub.subscribe(Catt.PubSub, lobby.code)
@@ -121,6 +119,15 @@ defmodule CattWeb.GameLive do
        games: [],
        state: GameSupervisor.get_game_by_code(socket.assigns.code)
      })}
+  end
+
+  def handle_info(:update_game_list, socket) do
+    {
+      :noreply,
+      assign(socket, %{
+        games: GameSupervisor.list_games()
+      })
+    }
   end
 
   def handle_join(code) do

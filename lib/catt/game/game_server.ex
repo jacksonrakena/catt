@@ -23,12 +23,12 @@ defmodule GameServer do
 
   def start_link(state) do
     Logger.info(inspect(state))
-    GenServer.start(__MODULE__, state)
+    GenServer.start(__MODULE__, state, name: {:via, Registry, {Registry.Catt, state.code}})
   end
 
   @impl true
   def terminate(reason, state) do
-    Logger.debug("Terminating game server #{state.code}")
+    Logger.info("Terminating game server #{state.code}")
   end
 
   @impl GenServer
