@@ -113,11 +113,22 @@ defmodule CattWeb.GameLive do
 
   @impl true
   def handle_info(:update, socket) do
+    state = GameSupervisor.get_game_by_code(socket.assigns.code)
+
+    if state == nil do
+      {:noreply,
+       assign(socket, %{
+         code: nil,
+         games: GameSupervisor.list_games(),
+         state: nil
+       })}
+    end
+
     {:noreply,
      assign(socket, %{
        code: socket.assigns.code,
        games: [],
-       state: GameSupervisor.get_game_by_code(socket.assigns.code)
+       state: state
      })}
   end
 

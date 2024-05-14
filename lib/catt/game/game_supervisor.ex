@@ -40,7 +40,13 @@ defmodule Catt.GameSupervisor do
   end
 
   def get_game_by_code(code) do
-    GenServer.call(GenServer.whereis({:via, Registry, {Registry.Catt, code}}), :get_code)
+    pid = GenServer.whereis({:via, Registry, {Registry.Catt, code}})
+
+    if pid != nil do
+      GenServer.call(pid, :get_code)
+    else
+      nil
+    end
   end
 
   @spec get_pid_by_code(any()) :: nil | pid() | {atom(), atom()}
