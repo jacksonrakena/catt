@@ -1,4 +1,5 @@
 defmodule CattWeb.GameLive do
+  alias Catt.GameClientMonitor
   alias Catt.GameSupervisor
   alias Ecto.UUID
   alias CattWeb.CoreComponents
@@ -53,6 +54,7 @@ defmodule CattWeb.GameLive do
   @spec mount(any(), any(), atom() | %{:id => any(), optional(any()) => any()}) :: {:ok, any()}
   def mount(_params, session, socket) do
     Phoenix.PubSub.subscribe(Catt.PubSub, "global")
+    GenServer.call(Catt.GameClientMonitor, {:monitor, self(), __MODULE__, %{id: socket.id}})
 
     case GameSupervisor.get_game_by_player(socket.assigns.current_user.id) do
       lobby when not is_nil(lobby) ->

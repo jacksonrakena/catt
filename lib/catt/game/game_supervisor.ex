@@ -29,8 +29,7 @@ defmodule Catt.GameSupervisor do
   @spec list_games() :: list()
   def list_games() do
     DynamicSupervisor.which_children(Catt.GameSupervisor)
-    |> Enum.map(fn {:undefined, pid, type, module} -> pid end)
-    |> Enum.map(fn pid -> GenServer.call(pid, :get_code) end)
+    |> Enum.map(fn {:undefined, pid, _, _} -> GenServer.call(pid, :get_code) end)
   end
 
   def get_game_by_player(player_id) do
@@ -38,22 +37,13 @@ defmodule Catt.GameSupervisor do
 
     if pid != nil do
       GenServer.call(pid, :get_code)
-    else
-      nil
     end
   end
 
   def get_game_by_code(code) do
-    pid = get_pid_by_code(code)
-
-    if pid != nil do
-      GenServer.call(pid, :get_code)
-    else
-      nil
-    end
+    with pid <- get_pid_by_code(code), do: GenServer.call(pid, :get_code)
   end
 
-  @spec get_pid_by_code(any()) :: nil | pid()
   def get_pid_by_code(code) do
     GenServer.whereis({:via, Registry, {Registry.Catt, code}})
   end
